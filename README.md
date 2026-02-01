@@ -1,5 +1,7 @@
 # mmxxvi_straight_scrape
 
+![](straightscrape.png)
+
 A self-hosted web research and content extraction API. Search the web via SearXNG, fetch and render pages (including JS-heavy SPAs), extract clean markdown content, and optionally summarize with Ollama.
 
 ## Quick Start
