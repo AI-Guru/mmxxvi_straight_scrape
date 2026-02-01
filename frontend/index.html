@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Straight Scrape</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Straight Scrape</h1>
+            <p class="subtitle">Search the web and extract content</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="search">Search</button>
+            <button class="tab" data-tab="fetch">Fetch URL</button>
+            <button class="tab" data-tab="status">Status</button>
+        </nav>
+
+        <main>
+            <!-- Search Tab -->
+            <section id="search-tab" class="tab-content active">
+                <form id="search-form">
+                    <div class="form-group">
+                        <label for="search-query">Search Query</label>
+                        <input type="text" id="search-query" placeholder="Enter your search query..." required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="max-results">Max Results</label>
+                            <input type="number" id="max-results" value="5" min="1" max="20">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="extract-content" checked>
+                                Extract Content
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="summarize-content">
+                                Summarize
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="bypass-cache">
+                                Bypass Cache
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn primary">Search</button>
+                </form>
+
+                <div id="search-status" class="status-message"></div>
+                <div id="search-results" class="results"></div>
+            </section>
+
+            <!-- Fetch Tab -->
+            <section id="fetch-tab" class="tab-content">
+                <form id="fetch-form">
+                    <div class="form-group">
+                        <label for="fetch-url">URL</label>
+                        <input type="url" id="fetch-url" placeholder="https://example.com/article" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="force-js">
+                                Force JS Rendering
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="fetch-summarize">
+                                Summarize
+                            </label>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="fetch-bypass-cache">
+                                Bypass Cache
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn primary">Fetch</button>
+                </form>
+
+                <div id="fetch-status" class="status-message"></div>
+                <div id="fetch-result" class="results"></div>
+            </section>
+
+            <!-- Status Tab -->
+            <section id="status-tab" class="tab-content">
+                <button id="refresh-status" class="btn secondary">Refresh Status</button>
+                <div id="health-status" class="status-card">
+                    <p>Click refresh to check service status</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Straight Scrape API &bull; Self-hosted web research tool</p>
+        </footer>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

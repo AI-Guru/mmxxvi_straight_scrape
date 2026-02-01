@@ -1,0 +1,74 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: scrape-searxng
+    restart: unless-stopped
+    ports:
+      - "${SEARXNG_PORT:-9810}:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:${SEARXNG_PORT:-9810}/
+    networks:
+      - scrape-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: scrape-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-9811}:8000"
+    volumes:
+      - ./frontend:/app/static:ro
+      - ./data:/app/data:rw
+    environment:
+      - SEARXNG_URL=http://searxng:8080
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gpt-oss:20b}
+      - CACHE_DIR=/app/data
+      - CACHE_TTL_SEARCH=${CACHE_TTL_SEARCH:-1800}
+      - CACHE_TTL_CONTENT=${CACHE_TTL_CONTENT:-86400}
+      - PLAYWRIGHT_MAX_CONTEXTS=${PLAYWRIGHT_MAX_CONTEXTS:-3}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      searxng:
+        condition: service_healthy
+    networks:
+      - scrape-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mcp:
+    build:
+      context: ./mcp
+      dockerfile: Dockerfile
+    container_name: scrape-mcp
+    restart: unless-stopped
+    ports:
+      - "${MCP_PORT:-9812}:8000"
+    environment:
+      - API_URL=http://api:8000
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gpt-oss:20b}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - scrape-network
+
+networks:
+  scrape-network:
+    driver: bridge

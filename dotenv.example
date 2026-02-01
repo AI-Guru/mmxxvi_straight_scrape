@@ -1,0 +1,15 @@
+# Port Configuration
+SEARXNG_PORT=9810
+API_PORT=9811
+MCP_PORT=9812
+
+# Ollama Configuration
+OLLAMA_HOST=http://host.docker.internal:11434
+OLLAMA_MODEL=gpt-oss:20b
+
+# Cache Configuration (in seconds)
+CACHE_TTL_SEARCH=1800      # 30 minutes for search results
+CACHE_TTL_CONTENT=86400    # 24 hours for page content
+
+# Playwright Configuration
+PLAYWRIGHT_MAX_CONTEXTS=3  # Max concurrent browser contexts (memory: ~500MB each)
