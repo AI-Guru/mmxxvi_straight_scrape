@@ -13,3 +13,11 @@ CACHE_TTL_CONTENT=86400    # 24 hours for page content
 
 # Playwright Configuration
 PLAYWRIGHT_MAX_CONTEXTS=3  # Max concurrent browser contexts (memory: ~500MB each)
+
+# Memory Limits (Docker) — guard the host if a container's memory grows unbounded.
+# The API runs Playwright/Chromium, which can leak memory across contexts; without
+# a limit a single run can exhaust the host. A container that exceeds its limit is
+# OOM-killed and restarted (restart: unless-stopped). Set 0 to disable a limit.
+API_MEM_LIMIT=1536m        # ~500MB per Playwright context (see above) + overhead
+SEARXNG_MEM_LIMIT=512m
+MCP_MEM_LIMIT=512m
