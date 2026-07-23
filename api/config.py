@@ -16,6 +16,11 @@ class Settings(BaseSettings):
 
     # Playwright Configuration
     playwright_max_contexts: int = 3
+    # Recycle the browser after this many contexts have been served, to release
+    # memory the long-lived browser process accumulates over time. The recycle
+    # happens at a safe checkpoint (no context in flight), so it never aborts an
+    # in-progress fetch. Set to 0 to disable recycling.
+    playwright_recycle_after: int = 200
 
     # Known SPA domains that require JS rendering
     spa_domains: list[str] = [

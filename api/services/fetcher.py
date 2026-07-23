@@ -9,14 +9,38 @@ from config import settings
 
 
 class PlaywrightPool:
-    def __init__(self, max_contexts: int | None = None):
+    def __init__(
+        self,
+        max_contexts: int | None = None,
+        recycle_after: int | None = None,
+    ):
         self.max_contexts = max_contexts or settings.playwright_max_contexts
+        self.recycle_after = (
+            recycle_after
+            if recycle_after is not None
+            else settings.playwright_recycle_after
+        )
         self.semaphore = asyncio.Semaphore(self.max_contexts)
+        # Serializes browser lifecycle (launch / teardown). Lock ordering is
+        # always semaphore-before-lifecycle to stay deadlock-free.
+        self._lifecycle_lock = asyncio.Lock()
         self._playwright = None
         self._browser: Browser | None = None
         self._initialized = False
+        self._contexts_served = 0
+        self._recycling = False
+        self._recycles_total = 0
 
-    async def initialize(self) -> None:
+    def stats(self) -> dict:
+        return {
+            "max_contexts": self.max_contexts,
+            "recycle_after": self.recycle_after,
+            "contexts_served": self._contexts_served,
+            "recycles_total": self._recycles_total,
+        }
+
+    async def _launch_browser(self) -> None:
+        # Caller must hold _lifecycle_lock.
         if self._initialized:
             return
         self._playwright = await async_playwright().start()
@@ -26,7 +50,8 @@ class PlaywrightPool:
         )
         self._initialized = True
 
-    async def close(self) -> None:
+    async def _teardown_browser(self) -> None:
+        # Caller must hold _lifecycle_lock.
         if self._browser:
             await self._browser.close()
             self._browser = None
@@ -35,12 +60,55 @@ class PlaywrightPool:
             self._playwright = None
         self._initialized = False
 
+    async def initialize(self) -> None:
+        async with self._lifecycle_lock:
+            await self._launch_browser()
+
+    async def close(self) -> None:
+        async with self._lifecycle_lock:
+            await self._teardown_browser()
+
+    async def _recycle(self) -> None:
+        # Drain the pool: acquiring every permit waits for all in-flight fetches
+        # to finish and blocks new ones, so we can swap the browser at a point
+        # where nothing is in progress — no in-progress fetch is ever aborted.
+        for _ in range(self.max_contexts):
+            await self.semaphore.acquire()
+        try:
+            async with self._lifecycle_lock:
+                await self._teardown_browser()
+                await self._launch_browser()
+                self._recycles_total += 1
+        finally:
+            for _ in range(self.max_contexts):
+                self.semaphore.release()
+
+    async def _maybe_recycle(self) -> None:
+        if self.recycle_after <= 0:
+            return
+        # asyncio is single-threaded, so this counter update and the flag
+        # check+set below run with no await in between and are therefore atomic.
+        # The _recycling flag is essential: while _recycle() drains the pool it
+        # acquires permits one at a time, so other in-flight fetches keep
+        # completing and bumping the counter — without the guard a second
+        # _recycle() would start and both would wait forever for the same
+        # permits (deadlock). The guard lets exactly one recycle run at a time.
+        self._contexts_served += 1
+        if self._contexts_served < self.recycle_after or self._recycling:
+            return
+        self._recycling = True
+        try:
+            await self._recycle()
+        finally:
+            self._contexts_served = 0
+            self._recycling = False
+
     @asynccontextmanager
     async def get_context(self):
-        if not self._initialized:
-            await self.initialize()
-
         async with self.semaphore:
+            if not self._initialized:
+                async with self._lifecycle_lock:
+                    await self._launch_browser()
             context = await self._browser.new_context(
                 viewport={"width": 1280, "height": 720},
                 user_agent=(
@@ -53,12 +121,17 @@ class PlaywrightPool:
                 yield context
             finally:
                 await context.close()
+        # Permit released above; recycle (if due) now drains a fully free pool.
+        await self._maybe_recycle()
 
 
 class Fetcher:
     def __init__(self):
         self._http_client: httpx.AsyncClient | None = None
         self._playwright_pool = PlaywrightPool()
+
+    def pool_stats(self) -> dict:
+        return self._playwright_pool.stats()
 
     async def initialize(self) -> None:
         self._http_client = httpx.AsyncClient(

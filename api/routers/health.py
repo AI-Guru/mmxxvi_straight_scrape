@@ -2,7 +2,7 @@ from fastapi import APIRouter
 import httpx
 
 from config import settings
-from models.schemas import HealthResponse
+from models.schemas import HealthResponse, PlaywrightPoolStats
 from services.summarizer import summarizer
 from services.fetcher import fetcher
 
@@ -22,10 +22,12 @@ async def health_check() -> HealthResponse:
     ollama_ok = await summarizer.is_available()
 
     playwright_contexts = settings.playwright_max_contexts
+    pool_stats = PlaywrightPoolStats(**fetcher.pool_stats())
 
     return HealthResponse(
         status="healthy" if searxng_ok else "degraded",
         searxng=searxng_ok,
         ollama=ollama_ok,
         playwright_contexts=playwright_contexts,
+        playwright_pool=pool_stats,
     )

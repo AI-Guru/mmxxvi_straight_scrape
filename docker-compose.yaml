@@ -3,7 +3,7 @@ services:
     image: searxng/searxng:latest
     container_name: scrape-searxng
     restart: unless-stopped
-    mem_limit: ${SEARXNG_MEM_LIMIT:-512m}
+    mem_limit: ${SEARXNG_MEM_LIMIT:-0}
     ports:
       - "${SEARXNG_PORT:-9810}:8080"
     volumes:
@@ -24,7 +24,7 @@ services:
       dockerfile: Dockerfile
     container_name: scrape-api
     restart: unless-stopped
-    mem_limit: ${API_MEM_LIMIT:-1536m}   # cap Playwright/Chromium memory growth; set 0 to disable
+    mem_limit: ${API_MEM_LIMIT:-0}   # 0 = unlimited (default). Set a value in .env to cap Playwright/Firefox memory growth.
     ports:
       - "${API_PORT:-9811}:8000"
     volumes:
@@ -38,6 +38,7 @@ services:
       - CACHE_TTL_SEARCH=${CACHE_TTL_SEARCH:-1800}
       - CACHE_TTL_CONTENT=${CACHE_TTL_CONTENT:-86400}
       - PLAYWRIGHT_MAX_CONTEXTS=${PLAYWRIGHT_MAX_CONTEXTS:-3}
+      - PLAYWRIGHT_RECYCLE_AFTER=${PLAYWRIGHT_RECYCLE_AFTER:-200}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -57,7 +58,7 @@ services:
       dockerfile: Dockerfile
     container_name: scrape-mcp
     restart: unless-stopped
-    mem_limit: ${MCP_MEM_LIMIT:-512m}
+    mem_limit: ${MCP_MEM_LIMIT:-0}
     ports:
       - "${MCP_PORT:-9812}:8000"
     environment:
