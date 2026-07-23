@@ -62,9 +62,17 @@ class DiffResponse(BaseModel):
     last_checked: datetime
 
 
+class PlaywrightPoolStats(BaseModel):
+    max_contexts: int
+    recycle_after: int
+    contexts_served: int
+    recycles_total: int
+
+
 class HealthResponse(BaseModel):
     status: str
     searxng: bool
     ollama: bool
     playwright_contexts: int
+    playwright_pool: PlaywrightPoolStats | None = None
     cache_entries: int | None = None

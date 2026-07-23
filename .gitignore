@@ -1,0 +1,15 @@
+# Local environment / config (use dotenv.example as the template)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Runtime data (keep the directory, ignore its contents)
+data/*
+!data/.gitkeep

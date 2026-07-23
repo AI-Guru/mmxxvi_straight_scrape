@@ -12,4 +12,20 @@ CACHE_TTL_SEARCH=1800      # 30 minutes for search results
 CACHE_TTL_CONTENT=86400    # 24 hours for page content
 
 # Playwright Configuration
-PLAYWRIGHT_MAX_CONTEXTS=3  # Max concurrent browser contexts (memory: ~500MB each)
+PLAYWRIGHT_MAX_CONTEXTS=3     # Max concurrent browser contexts (memory: ~500MB each)
+PLAYWRIGHT_RECYCLE_AFTER=200  # Recycle the browser after N contexts to release memory
+                             # the long-lived browser process accumulates. Happens at a
+                             # safe checkpoint (no fetch in flight) — never aborts a run.
+                             # Set 0 to disable.
+
+# Memory Limits (Docker) — OPT-IN backstop against a container's memory growing
+# unbounded (the API runs Playwright/Firefox, whose RSS ratchets up over long runs).
+# DEFAULT IS UNLIMITED: if unset, no limit is applied, so an upgrade never OOM-kills
+# an in-progress run. Uncomment/set a value only if you want a hard host guard.
+# WARNING: a container that exceeds its limit is OOM-killed mid-run and restarted
+# (restart: unless-stopped) — set these well above normal peak so only a genuine
+# runaway trips them. Normal API peak ≈ PLAYWRIGHT_MAX_CONTEXTS × ~500MB + browser
+# base + runtime. Set 0 (or leave unset) to disable a limit.
+# API_MEM_LIMIT=4096m        # backstop well above normal peak (3 contexts ≈ 1.5GB)
+# SEARXNG_MEM_LIMIT=1024m
+# MCP_MEM_LIMIT=512m
